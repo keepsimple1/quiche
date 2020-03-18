@@ -275,6 +275,8 @@ pub fn run(
                         }
                     },
 
+                    Ok((_stream_id, quiche::h3::Event::GoAway(_id))) => (),
+
                     Err(quiche::h3::Error::Done) => {
                         break;
                     },
