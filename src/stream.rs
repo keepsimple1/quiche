@@ -92,7 +92,7 @@ pub struct StreamMap {
     /// same urgency level Non-incremental streams are scheduled first, in the
     /// order of their stream IDs, and incremental streams are scheduled in a
     /// round-robin fashion after all non-incremental streams have been flushed.
-    flushable: BTreeMap<u8, (BinaryHeap<u64>, VecDeque<u64>)>,
+    flushable: BTreeMap<u8, (BinaryHeap<std::cmp::Reverse<u64>>, VecDeque<u64>)>,
 
     /// Set of stream IDs corresponding to streams that have outstanding data
     /// to read. This is used to generate a `StreamIter` of streams without
@@ -265,7 +265,7 @@ impl StreamMap {
 
         if !incr {
             // Non-incremental streams are scheduled in order of their stream ID.
-            queues.0.push(stream_id)
+            queues.0.push(std::cmp::Reverse(stream_id))
         } else {
             // Incremental streams are scheduled in a round-robin fashion.
             queues.1.push_back(stream_id)
@@ -276,14 +276,14 @@ impl StreamMap {
     /// queue with the specified urgency.
     ///
     /// Note that if the stream is still flushable after sending some of its
-    /// outstanding data, it needs to be added back to the queu.
+    /// outstanding data, it needs to be added back to the queue.
     pub fn pop_flushable(&mut self) -> Option<u64> {
         // Remove the first element from the queue corresponding to the lowest
         // urgency that has elements.
         let (node, clear) =
             if let Some((urgency, queues)) = self.flushable.iter_mut().next() {
                 let (node, empty) = if !queues.0.is_empty() {
-                    (queues.0.pop(), queues.0.is_empty())
+                    (queues.0.pop().map(|x| x.0), queues.0.is_empty())
                 } else {
                     (queues.1.pop_front(), queues.1.is_empty())
                 };
