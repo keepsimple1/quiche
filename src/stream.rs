@@ -282,13 +282,13 @@ impl StreamMap {
         // urgency that has elements.
         let (node, clear) =
             if let Some((urgency, queues)) = self.flushable.iter_mut().next() {
-                let (node, empty) = if !queues.0.is_empty() {
-                    (queues.0.pop().map(|x| x.0), queues.0.is_empty())
+                let node = if !queues.0.is_empty() {
+                    queues.0.pop().map(|x| x.0)
                 } else {
-                    (queues.1.pop_front(), queues.1.is_empty())
+                    queues.1.pop_front()
                 };
 
-                let clear = if empty {
+                let clear = if queues.0.is_empty() && queues.1.is_empty() {
                     Some(*urgency)
                 } else {
                     None
