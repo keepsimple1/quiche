@@ -2599,11 +2599,15 @@ impl Connection {
     pub fn stream_priority(
         &mut self, stream_id: u64, urgency: u8, incremental: bool,
     ) -> Result<()> {
-        // Get existing stream.
-        let stream = self
-            .streams
-            .get_mut(stream_id)
-            .ok_or(Error::InvalidStreamState)?;
+        // Get existing stream or create a new one, but if the stream
+        // has already been closed and collected, ignore the prioritization.
+        let stream = match self.get_or_create_stream(stream_id, true) {
+            Ok(v) => v,
+
+            Err(Error::Done) => return Ok(()),
+
+            Err(e) => return Err(e),
+        };
 
         if stream.urgency == urgency && stream.incremental == incremental {
             return Ok(());
