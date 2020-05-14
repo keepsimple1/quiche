@@ -260,6 +260,9 @@ use crate::octets;
 /// ../struct.Config.html#method.set_application_protos
 pub const APPLICATION_PROTOCOL: &[u8] = b"\x05h3-27";
 
+// The offset used when converting HTTP/3 urgency to quiche urgency.
+const PRIORITY_URGENCY_OFFSET: u8 = 124;
+
 /// A specialized [`Result`] type for quiche HTTP/3 operations.
 ///
 /// This type is used throughout quiche's HTTP/3 public API for any operation
@@ -639,9 +642,11 @@ impl Connection {
     ) -> Result<()> {
         match self.streams.get_mut(&stream_id) {
             Some(s) => {
+                // The HTTP/3 urgency needs to be shifted
+                // into the quiche urgency range.
                 conn.stream_priority(
                     stream_id,
-                    s.priority.urgency,
+                    s.priority.urgency.saturating_add(PRIORITY_URGENCY_OFFSET),
                     s.priority.incremental,
                 )?;
             },
@@ -905,7 +910,22 @@ impl Connection {
         let mut d = [0; 8];
         let mut b = octets::OctetsMut::with_slice(&mut d);
 
-        conn.stream_priority(stream_id, 0, true)?;
+        match ty {
+            // Control and QPACK streams are the most important to schedule.
+            stream::HTTP3_CONTROL_STREAM_TYPE_ID |
+            stream::QPACK_ENCODER_STREAM_TYPE_ID |
+            stream::QPACK_DECODER_STREAM_TYPE_ID => {
+                conn.stream_priority(stream_id, 0, true)?;
+            },
+
+            // TODO: Server push
+            stream::HTTP3_PUSH_STREAM_TYPE_ID => (),
+
+            // Anything else is a GREASE stream, so make it the least important.
+            _ => {
+                conn.stream_priority(stream_id, 255, true)?;
+            },
+        }
 
         conn.stream_send(stream_id, b.put_varint(ty)?, false)?;
 
