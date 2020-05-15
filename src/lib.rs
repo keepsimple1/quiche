@@ -782,6 +782,9 @@ pub struct Connection {
     /// trigger sending MAX_DATA frames after a certain threshold.
     max_rx_data_next: u64,
 
+    /// Whether we send MAX_DATA frame.
+    almost_full: bool,
+
     /// Total number of bytes sent to the peer.
     tx_data: u64,
 
@@ -1107,6 +1110,7 @@ impl Connection {
             rx_data: 0,
             max_rx_data,
             max_rx_data_next: max_rx_data,
+            almost_full: false,
 
             tx_data: 0,
             max_tx_data: 0,
@@ -1881,6 +1885,10 @@ impl Connection {
                     }
                 },
 
+                frame::Frame::MaxData { .. } => {
+                    self.almost_full = true;
+                },
+
                 _ => (),
             }
         }
@@ -2048,13 +2056,14 @@ impl Connection {
             }
 
             // Create MAX_DATA frame as needed.
-            if self.should_update_max_data() {
+            if self.almost_full {
                 let frame = frame::Frame::MaxData {
                     max: self.max_rx_data_next,
                 };
 
                 if push_frame_to_pkt!(frames, frame, payload_len, left) {
-                    self.max_rx_data = self.max_rx_data_next;
+                    self.update_max_data();
+                    self.almost_full = false;
 
                     ack_eliciting = true;
                     in_flight = true;
@@ -2500,6 +2509,10 @@ impl Connection {
             );
             q.add_event(ev).ok();
         });
+
+        if self.should_update_max_data() {
+            self.almost_full = true;
+        }
 
         Ok((read, fin))
     }
@@ -3414,6 +3427,11 @@ impl Connection {
     fn should_update_max_data(&self) -> bool {
         self.max_rx_data_next != self.max_rx_data &&
             self.max_rx_data_next / 2 > self.max_rx_data - self.rx_data
+    }
+
+    /// Commits the new max_rx_data limit.
+    pub fn update_max_data(&mut self) {
+        self.max_rx_data = self.max_rx_data_next;
     }
 
     /// Returns the idle timeout value.
