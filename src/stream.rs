@@ -101,6 +101,9 @@ pub struct StreamMap {
     /// generate a `StreamIter` of streams without having to iterate over the
     /// full list of streams.
     almost_full: HashSet<u64>,
+
+    /// Set of stream IDs corresponding to streams that have received STOP_SENDING
+    stoppable: HashSet<u64>,
 }
 
 impl StreamMap {
@@ -264,6 +267,10 @@ impl StreamMap {
         }
     }
 
+    pub fn mark_stoppable(&mut self, stream_id: u64) {
+        self.stoppable.insert(stream_id);
+    }
+
     /// Adds or removes the stream ID to/from the writable streams set.
     ///
     /// This should also be called anytime a new stream is created, in addition
@@ -343,6 +350,10 @@ impl StreamMap {
     /// Creates an iterator over streams that have outstanding data to read.
     pub fn readable(&self) -> StreamIter {
         StreamIter::from(&self.readable)
+    }
+
+    pub fn stoppable(&self) -> StreamIter {
+        StreamIter::from(&self.stoppable)
     }
 
     /// Creates an iterator over streams that can be written to.
