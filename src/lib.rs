@@ -2771,6 +2771,11 @@ impl Connection {
         self.streams.readable()
     }
 
+    /// Returns an iterator over streams that have received STOP_SENDING
+    pub fn stoppable(&self) -> StreamIter {
+        self.streams.stoppable()
+    }
+
     /// Returns an iterator over streams that can be written to.
     ///
     /// A "writable" stream is a stream that has enough flow control capacity to
@@ -3192,6 +3197,7 @@ impl Connection {
                 {
                     return Err(Error::InvalidStreamState);
                 }
+                self.streams.mark_stoppable(stream_id);
             },
 
             frame::Frame::Crypto { data } => {
