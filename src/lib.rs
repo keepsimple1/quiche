@@ -274,7 +274,7 @@ use std::str::FromStr;
 pub use crate::cc::Algorithm as CongestionControlAlgorithm;
 
 /// The current QUIC wire version.
-pub const PROTOCOL_VERSION: u32 = PROTOCOL_VERSION_DRAFT27;
+pub const PROTOCOL_VERSION: u32 = PROTOCOL_VERSION_DRAFT25;
 
 /// Supported QUIC versions.
 ///
