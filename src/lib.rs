@@ -2449,8 +2449,8 @@ impl Connection {
     }
 
     /// Returns an iterator over streams that have received STOP_SENDING
-    pub fn stoppable(&self) -> StreamIter {
-        self.streams.stoppable()
+    pub fn poll_stoppable(&mut self) -> Option<u64> {
+        self.streams.poll_stoppable()
     }
 
     /// Returns an iterator over streams that can be written to.
