@@ -512,8 +512,6 @@ pub struct Connection {
 
     finished_streams: VecDeque<u64>,
 
-    stopped_streams: VecDeque<u64>,
-
     frames_greased: bool,
 }
 
@@ -561,8 +559,6 @@ impl Connection {
             max_push_id: 0,
 
             finished_streams: VecDeque::new(),
-
-            stopped_streams: VecDeque::new(),
 
             frames_greased: false,
         })
@@ -864,10 +860,6 @@ impl Connection {
             return Ok((finished, Event::Finished));
         }
 
-        if let Some(stopped) = self.stopped_streams.pop_front() {
-            return Ok((stopped, Event::Stop));
-        }
-
         // Process HTTP/3 data from readable streams.
         for s in conn.readable() {
             trace!("{} stream id {} is readable", conn.trace_id(), s);
@@ -891,8 +883,8 @@ impl Connection {
             }
         }
 
-        for s in conn.stoppable() {
-            self.stopped_streams.push_back(s);
+        if let Some(stopped) = conn.poll_stoppable() {
+            return Ok((stopped, Event::Stop));
         }
 
         Err(Error::Done)
