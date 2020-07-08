@@ -3027,13 +3027,15 @@ impl Connection {
             frame::Frame::PathResponse { .. } => (),
 
             frame::Frame::ConnectionClose { .. } => {
-                self.draining_timer = Some(now + (self.recovery.pto() * 3));
-                error!("Received ConnectionClose");
+                let timeout = self.recovery.pto() * 3;
+                self.draining_timer = Some(now + timeout);
+                error!("Received ConnectionClose, timeout is: {:?}", timeout);
             },
 
             frame::Frame::ApplicationClose { .. } => {
-                self.draining_timer = Some(now + (self.recovery.pto() * 3));
-                error!("Received ApplicationClose");
+                let timeout = self.recovery.pto() * 3;
+                self.draining_timer = Some(now + timeout);
+                error!("Received ApplicationClose, timeout is: {:?}", timeout);
             },
 
             frame::Frame::HandshakeDone => {
