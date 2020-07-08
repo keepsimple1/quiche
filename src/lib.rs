@@ -3029,13 +3029,13 @@ impl Connection {
             frame::Frame::ConnectionClose { .. } => {
                 let timeout = self.recovery.pto() * 3;
                 self.draining_timer = Some(now + timeout);
-                error!("Received ConnectionClose, timeout is: {:?}", timeout);
+                error!("Received ConnectionClose, drain timer is: {:?}", timeout);
             },
 
             frame::Frame::ApplicationClose { .. } => {
                 let timeout = self.recovery.pto() * 3;
                 self.draining_timer = Some(now + timeout);
-                error!("Received ApplicationClose, timeout is: {:?}", timeout);
+                error!("Received ApplicationClose, drain timer is: {:?}", timeout);
             },
 
             frame::Frame::HandshakeDone => {
