@@ -3376,12 +3376,10 @@ impl Connection {
 
             frame::Frame::ConnectionClose { .. } => {
                 self.draining_timer = Some(now + (self.recovery.pto() * 3));
-                error!("Received ConnectionClose");
             },
 
             frame::Frame::ApplicationClose { .. } => {
                 self.draining_timer = Some(now + (self.recovery.pto() * 3));
-                error!("Received ApplicationClose");
             },
 
             frame::Frame::HandshakeDone => {
