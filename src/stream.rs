@@ -113,6 +113,9 @@ pub struct StreamMap {
     /// of the map elements represents the offset of the stream at which the
     /// blocking occurred.
     blocked: HashMap<u64, u64>,
+
+    /// Queue of (stream_id, error_code) corresponding to STOP_SENDING received.
+    stoppable: VecDeque<(u64, u64)>,
 }
 
 impl StreamMap {
@@ -353,6 +356,14 @@ impl StreamMap {
         } else {
             self.blocked.remove(&stream_id);
         }
+    }
+
+    pub fn mark_stoppable(&mut self, stream_id: u64, error_code: u64) {
+        self.stoppable.push_back((stream_id, error_code));
+    }
+
+    pub fn poll_stoppable(&mut self) -> Option<(u64, u64)> {
+        self.stoppable.pop_front()
     }
 
     /// Updates the peer's maximum bidirectional stream count limit.
