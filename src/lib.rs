@@ -2964,6 +2964,11 @@ impl Connection {
         self.streams.writable()
     }
 
+    /// Returns a stream that has just received STOP_SENDING, or None
+    pub fn poll_stoppable(&mut self) -> Option<u64> {
+        self.streams.poll_stoppable()
+    }
+
     /// Returns the amount of time until the next timeout event.
     ///
     /// Once the given duration has elapsed, the [`on_timeout()`] method should
@@ -3360,6 +3365,7 @@ impl Connection {
                 {
                     return Err(Error::InvalidStreamState);
                 }
+                self.streams.mark_stoppable(stream_id);
             },
 
             frame::Frame::Crypto { data } => {
