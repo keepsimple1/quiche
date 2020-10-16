@@ -954,6 +954,7 @@ impl Connection {
             }
         }
 
+        // Process STOP_SENDING if any
         if let Some(stoppable) = conn.poll_stoppable() {
             return Ok((stoppable, Event::StopSending));
         }

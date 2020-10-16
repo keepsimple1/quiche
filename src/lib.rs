@@ -2964,7 +2964,7 @@ impl Connection {
         self.streams.writable()
     }
 
-    /// Returns a stream that has received STOP_SENDING, or None
+    /// Returns the streamId of a stream that has received STOP_SENDING
     pub fn poll_stoppable(&mut self) -> Option<u64> {
         self.streams.poll_stoppable()
     }
