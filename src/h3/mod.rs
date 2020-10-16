@@ -475,8 +475,8 @@ pub enum Event {
     /// Stream was closed,
     Finished,
 
-    /// Stream received STOP_SENDING from peer
-    Stop,
+    /// Stream received STOP_SENDING from the peer
+    StopSending,
 }
 
 struct ConnectionSettings {
@@ -954,8 +954,8 @@ impl Connection {
             }
         }
 
-        if let Some(stopped) = conn.poll_stoppable() {
-            return Ok((stopped, Event::Stop));
+        if let Some(stoppable) = conn.poll_stoppable() {
+            return Ok((stoppable, Event::StopSending));
         }
 
         Err(Error::Done)

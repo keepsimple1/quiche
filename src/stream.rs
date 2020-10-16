@@ -116,9 +116,7 @@ pub struct StreamMap {
     /// blocking occurred.
     blocked: HashMap<u64, u64>,
 
-    /// The stream IDs corresponding to streams that have received STOP_SENDING.
-    ///
-    /// After STOP_SENDING is processed, the corresponding stream id is removed from this set.
+    /// Queue of stream IDs corresponding to streams that have received STOP_SENDING.
     stoppable: VecDeque<u64>,
 }
 
