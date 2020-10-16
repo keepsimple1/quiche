@@ -476,7 +476,10 @@ pub enum Event {
     Finished,
 
     /// Stream received STOP_SENDING from the peer
-    StopSending,
+    StopSending {
+        /// Application Protocol Error Code
+        error_code: u64
+    },
 }
 
 struct ConnectionSettings {
@@ -956,7 +959,7 @@ impl Connection {
 
         // Process STOP_SENDING if any
         if let Some(stoppable) = conn.poll_stoppable() {
-            return Ok((stoppable, Event::StopSending));
+            return Ok((stoppable.0, Event::StopSending { error_code: stoppable.1 }));
         }
 
         Err(Error::Done)

@@ -2965,7 +2965,7 @@ impl Connection {
     }
 
     /// Returns the streamId of a stream that has received STOP_SENDING
-    pub fn poll_stoppable(&mut self) -> Option<u64> {
+    pub fn poll_stoppable(&mut self) -> Option<(u64, u64)> {
         self.streams.poll_stoppable()
     }
 
@@ -3358,14 +3358,14 @@ impl Connection {
                 }
             },
 
-            frame::Frame::StopSending { stream_id, .. } => {
+            frame::Frame::StopSending { stream_id, error_code } => {
                 // STOP_SENDING on a receive-only stream is a fatal error.
                 if !stream::is_local(stream_id, self.is_server) &&
                     !stream::is_bidi(stream_id)
                 {
                     return Err(Error::InvalidStreamState);
                 }
-                self.streams.mark_stoppable(stream_id);
+                self.streams.mark_stoppable(stream_id, error_code);
             },
 
             frame::Frame::Crypto { data } => {

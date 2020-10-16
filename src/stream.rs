@@ -116,8 +116,8 @@ pub struct StreamMap {
     /// blocking occurred.
     blocked: HashMap<u64, u64>,
 
-    /// Queue of stream IDs corresponding to streams that have received STOP_SENDING.
-    stoppable: VecDeque<u64>,
+    /// Queue of (stream_id, error_code) corresponding to STOP_SENDING received.
+    stoppable: VecDeque<(u64, u64)>,
 }
 
 impl StreamMap {
@@ -360,11 +360,11 @@ impl StreamMap {
         }
     }
 
-    pub fn mark_stoppable(&mut self, stream_id: u64) {
-        self.stoppable.push_back(stream_id);
+    pub fn mark_stoppable(&mut self, stream_id: u64, error_code: u64) {
+        self.stoppable.push_back((stream_id, error_code));
     }
 
-    pub fn poll_stoppable(&mut self) -> Option<u64> {
+    pub fn poll_stoppable(&mut self) -> Option<(u64, u64)> {
         self.stoppable.pop_front()
     }
 

@@ -258,6 +258,11 @@ fn main() {
                         conn.close(true, 0x00, b"kthxbye").unwrap();
                     },
 
+                    Ok((stream_id, quiche::h3::Event::StopSending { error_code })) => {
+                        info!("StopSending received for stream {}, error_code: {}",
+                              stream_id, error_code);
+                    },
+
                     Err(quiche::h3::Error::Done) => {
                         break;
                     },
