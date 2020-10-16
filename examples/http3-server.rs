@@ -358,10 +358,6 @@ fn main() {
                         Ok((stream_id, quiche::h3::Event::StopSending { error_code })) => {
                             info!("StopSending received for stream {}, error_code {}",
                                   stream_id, error_code);
-                            match client.conn.stream_shutdown(stream_id, quiche::Shutdown::Write, 0) {
-                                Ok(()) => info!("Stream {} is shutdown", stream_id),
-                                Err(e) => error!("Failed to shutdown stream {}: {}", stream_id, &e),
-                            }
                         },
 
                         Err(quiche::h3::Error::Done) => {

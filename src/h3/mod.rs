@@ -158,6 +158,10 @@
 //!             // Peer terminated stream, handle it.
 //!         }
 //!
+//!         Ok((stream_id, quiche::h3::Event::StopSending {error_code})) => {
+//!             // Peer sent STOP_SENDING, handle it.
+//!         }
+//!
 //!         Err(quiche::h3::Error::Done) => {
 //!             // Done reading.
 //!             break;
@@ -201,6 +205,10 @@
 //!
 //!         Ok((stream_id, quiche::h3::Event::Finished)) => {
 //!             // Peer terminated stream, handle it.
+//!         }
+//!
+//!         Ok((stream_id, quiche::h3::Event::StopSending {error_code})) => {
+//!             // Peer sent STOP_SENDING, handle it.
 //!         }
 //!
 //!         Err(quiche::h3::Error::Done) => {
