@@ -273,6 +273,13 @@ pub fn run(
                         }
                     },
 
+                    Ok((stream_id, quiche::h3::Event::StopSending{error_code})) => {
+                        info!(
+                            "StopSending received for stream {} error_code {}",
+                            stream_id, error_code
+                        );
+                    },
+
                     Err(quiche::h3::Error::Done) => {
                         break;
                     },
