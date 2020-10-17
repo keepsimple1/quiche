@@ -1847,6 +1847,9 @@ mod tests {
 
     use super::testing::*;
 
+    use crate::frame::Frame as QuicFrame;
+    use crate::packet as QuicPacket;
+
     #[test]
     /// Make sure that random GREASE values is within the specified limit.
     fn grease_value_in_varint_limit() {
@@ -2922,6 +2925,39 @@ mod tests {
 
         // Once the server gives flow control credits back, we can send the body.
         assert_eq!(s.client.send_body(&mut s.pipe.client, 0, b"", true), Ok(0));
+    }
+
+    #[test]
+    fn stop_sending_server() {
+        let mut s = Session::default().unwrap();
+        s.handshake().unwrap();
+        let (stream, req) = s.send_request(true).unwrap();
+        let ev_headers = Event::Headers {
+            list: req,
+            has_body: false,
+        };
+        assert_eq!(s.poll_server(), Ok((stream, ev_headers)));
+        assert_eq!(s.poll_server(), Ok((stream, Event::Finished)));
+
+        // Start the response
+        s.send_response(stream, false).unwrap();
+        s.send_body_server(stream, false).unwrap();
+
+        // The client sends STOP_SENDING to the server
+        let error_code = 12345;
+        let frames = [QuicFrame::StopSending {
+            stream_id: stream,
+            error_code,
+        }];
+        let pkt_type = QuicPacket::Type::Short;
+        let mut buf = [0; 65535];
+        assert!(s.pipe.send_pkt_to_server(pkt_type, &frames, &mut buf).is_ok());
+
+        let stop_sending = Event::StopSending { error_code };
+        assert_eq!(s.poll_server(), Ok((stream, stop_sending)));
+
+        // Finish the response
+        s.send_body_server(stream, true).unwrap();
     }
 }
 
