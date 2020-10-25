@@ -2283,7 +2283,7 @@ impl Connection {
                     },
                 };
 
-                let final_size = stream.send.off_back();
+                let final_size = stream.send.off_front();
                 let frame = frame::Frame::ResetStream { stream_id, error_code, final_size };
 
                 if push_frame_to_pkt!(frames, frame, payload_len, left) {
