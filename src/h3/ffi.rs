@@ -114,7 +114,7 @@ pub extern fn quiche_h3_event_type(ev: &h3::Event) -> u32 {
 
         h3::Event::Datagram { .. } => 3,
 
-        h3::Event::StopSending { .. } => 4,
+        h3::Event::Reset { .. } => 4,
     }
 }
 

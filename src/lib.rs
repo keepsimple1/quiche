@@ -413,6 +413,7 @@ impl std::convert::From<octets::BufferTooShortError> for Error {
 /// This should be used when calling [`stream_shutdown()`].
 ///
 /// [`stream_shutdown()`]: struct.Connection.html#method.stream_shutdown
+#[derive(Debug, PartialEq)]
 #[repr(C)]
 pub enum Shutdown {
     /// Stop receiving stream data.
@@ -2247,6 +2248,52 @@ impl Connection {
                     in_flight = true;
                 }
             }
+
+            // Create STOP_SENDING frames as needed.
+            for (stream_id, error_code) in self
+                .streams
+                .recv_aborted()
+                .map(|(&k, &v)| (k, v))
+                .collect::<Vec<(u64, u64)>>()
+            {
+                // TODO: check stream state, should be in 'Recv' or 'Size Known' state.
+                let frame = frame::Frame::StopSending { stream_id, error_code };
+
+                if push_frame_to_pkt!(frames, frame, payload_len, left) {
+                    self.streams.mark_recv_aborted(stream_id, false, error_code);
+
+                    ack_eliciting = true;
+                    in_flight = true;
+                }
+            }
+
+            // Create RESET_STREAM frames as needed
+            for (stream_id, error_code) in self
+                .streams
+                .resettable()
+                .map(|(&k, &v)| (k, v))
+                .collect::<Vec<(u64, u64)>>()
+            {
+                let stream = match self.streams.get(stream_id) {
+                    Some(s) => s,
+                    None => {
+                        println!("remove reset mark for stream {}", stream_id);
+                        self.streams.mark_resettable(stream_id, false, error_code);
+                        continue;
+                    },
+                };
+
+                let final_size = stream.send.off_back();
+                let frame = frame::Frame::ResetStream { stream_id, error_code, final_size };
+
+                if push_frame_to_pkt!(frames, frame, payload_len, left) {
+                    self.streams.mark_resettable(stream_id, false, error_code);
+                    self.streams.mark_sent_reset(stream_id, error_code);
+
+                    ack_eliciting = true;
+                    in_flight = true;
+                }
+            }
         }
 
         // Create CONNECTION_CLOSE frame.
@@ -2880,26 +2927,33 @@ impl Connection {
     /// [`stream_recv()`]: struct.Connection.html#method.stream_recv
     /// [`stream_send()`]: struct.Connection.html#method.stream_send
     pub fn stream_shutdown(
-        &mut self, stream_id: u64, direction: Shutdown, _err: u64,
+        &mut self, stream_id: u64, direction: Shutdown, err: u64,
     ) -> Result<()> {
+        trace!("stream_shutdown: stream {} direction {:?} err {}", stream_id, direction, err);
+
         // Get existing stream.
         let stream = self.streams.get_mut(stream_id).ok_or(Error::Done)?;
 
         match direction {
-            // TODO: send STOP_SENDING
             Shutdown::Read => {
                 stream.recv.shutdown()?;
 
                 // Once shutdown, the stream is guaranteed to be non-readable.
                 self.streams.mark_readable(stream_id, false);
+
+                // candidate to send STOP_SENDING on this stream
+                // we will check stream state before sending out STOP_SENDING
+                self.streams.mark_recv_aborted(stream_id, true, err);
             },
 
-            // TODO: send RESET_STREAM
             Shutdown::Write => {
                 stream.send.shutdown()?;
 
                 // Once shutdown, the stream is guaranteed to be non-writable.
                 self.streams.mark_writable(stream_id, false);
+
+                // Ready to reset the stream
+                self.streams.mark_resettable(stream_id, true, err);
             },
         }
 
@@ -3230,9 +3284,9 @@ impl Connection {
             .is_none()
     }
 
-    /// Returns the (stream_id, error_code) of a stream that has received STOP_SENDING
-    pub fn poll_stoppable(&mut self) -> Option<(u64, u64)> {
-        self.streams.poll_stoppable()
+    /// Returns the (stream_id, error_code) of a stream that has sent RESET_STREAM
+    pub fn poll_reset(&mut self) -> Option<(u64, u64)> {
+        self.streams.poll_sent_reset()
     }
 
     /// Returns the amount of time until the next timeout event.
@@ -3528,6 +3582,7 @@ impl Connection {
                 self.streams.should_update_max_streams_uni() ||
                 self.streams.has_flushable() ||
                 self.streams.has_almost_full() ||
+                self.streams.has_stop_sending() ||
                 self.streams.has_blocked())
         {
             return Ok(packet::EPOCH_APPLICATION);
@@ -3639,7 +3694,8 @@ impl Connection {
                 {
                     return Err(Error::InvalidStreamState);
                 }
-                self.streams.mark_stoppable(stream_id, error_code);
+
+                self.stream_shutdown(stream_id, Shutdown::Write, error_code)?;
             },
 
             frame::Frame::Crypto { data } => {

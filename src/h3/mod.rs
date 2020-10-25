@@ -149,32 +149,32 @@
 //!                 h3_conn.send_response(&mut conn, stream_id, &resp, false)?;
 //!                 h3_conn.send_body(&mut conn, stream_id, b"Hello World!", true)?;
 //!             }
-//!         },
+//!         }
 //!
 //!         Ok((stream_id, quiche::h3::Event::Data)) => {
 //!             // Request body data, handle it.
 //!             # return Ok(());
-//!         },
+//!         }
 //!
 //!         Ok((stream_id, quiche::h3::Event::Finished)) => {
 //!             // Peer terminated stream, handle it.
-//!         },
+//!         }
 //!
 //!         Ok((_flow_id, quiche::h3::Event::Datagram)) => (),
 //!
-//!         Ok((stream_id, quiche::h3::Event::StopSending {error_code})) => {
+//!         Ok((stream_id, quiche::h3::Event::Reset {error_code})) => {
 //!             // Peer sent STOP_SENDING, handle it.
 //!         }
 //!
 //!         Err(quiche::h3::Error::Done) => {
 //!             // Done reading.
 //!             break;
-//!         },
+//!         }
 //!
 //!         Err(e) => {
 //!             // An error occurred, handle it.
 //!             break;
-//!         },
+//!         }
 //!     }
 //! }
 //! # Ok::<(), quiche::h3::Error>(())
@@ -196,7 +196,7 @@
 //!             let status = list.iter().find(|h| h.name() == ":status").unwrap();
 //!             println!("Received {} response on stream {}",
 //!                      status.value(), stream_id);
-//!         },
+//!         }
 //!
 //!         Ok((stream_id, quiche::h3::Event::Data)) => {
 //!             let mut body = vec![0; 4096];
@@ -207,27 +207,27 @@
 //!                 println!("Received {} bytes of payload on stream {}",
 //!                          read, stream_id);
 //!             }
-//!         },
+//!         }
 //!
 //!         Ok((stream_id, quiche::h3::Event::Finished)) => {
 //!             // Peer terminated stream, handle it.
-//!         },
+//!         }
 //!
 //!         Ok((_flow_id, quiche::h3::Event::Datagram)) => (),
 //!
-//!         Ok((stream_id, quiche::h3::Event::StopSending {error_code})) => {
+//!         Ok((stream_id, quiche::h3::Event::Reset {error_code})) => {
 //!             // Peer sent STOP_SENDING, handle it.
 //!         }
 //!
 //!         Err(quiche::h3::Error::Done) => {
 //!             // Done reading.
 //!             break;
-//!         },
+//!         }
 //!
 //!         Err(e) => {
 //!             // An error occurred, handle it.
 //!             break;
-//!         },
+//!         }
 //!     }
 //! }
 //! # Ok::<(), quiche::h3::Error>(())
@@ -266,6 +266,7 @@ use std::collections::HashMap;
 use std::collections::VecDeque;
 
 use crate::octets;
+use crate::h3::stream::Type;
 
 /// List of ALPN tokens of supported HTTP/3 versions.
 ///
@@ -523,9 +524,11 @@ pub enum Event {
     /// DATAGRAM was received.
     Datagram,
 
-    /// STOP_SENDING was received.
-    StopSending {
-        /// Application Protocol Error Code
+    /// Stream was reset by this endpoint, i.e. sent RESET_STREAM.
+    /// This happens when the application calls `stream_shutdown()` for `Write`,
+    /// or quiche responds to STOP_SENDING from the peer.
+    Reset {
+        /// Application Error Code
         error_code: u64
     },
 }
@@ -1086,9 +1089,19 @@ impl Connection {
             }
         }
 
-        // Process STOP_SENDING if any
-        if let Some(stoppable) = conn.poll_stoppable() {
-            return Ok((stoppable.0, Event::StopSending { error_code: stoppable.1 }));
+        // Process RESET_STREAM if any, trigger `Event::Reset` only for `Request` streams
+        while let Some(reset) = conn.poll_reset() {
+            let stream_id = reset.0;
+            let error_code = reset.1;
+
+            match self.streams.get(&stream_id) {
+                Some(stream) => match stream.ty() {
+                    Some(Type::Request) => return Ok((stream_id,
+                                                      Event::Reset { error_code })),
+                    _ => trace!("stream {} is not Request type", stream_id),
+                }
+                None => trace!("stream {} no longer exists", stream_id),
+            }
         }
 
         Err(Error::Done)
@@ -1968,8 +1981,7 @@ mod tests {
 
     use super::testing::*;
 
-    use crate::frame::Frame as QuicFrame;
-    use crate::packet as QuicPacket;
+    use crate::Shutdown;
 
     #[test]
     /// Make sure that random GREASE values is within the specified limit.
@@ -3068,17 +3080,12 @@ mod tests {
 
         // The client sends STOP_SENDING to the server
         let error_code = 12345;
-        let frames = [QuicFrame::StopSending {
-            stream_id: stream,
-            error_code,
-        }];
-        let pkt_type = QuicPacket::Type::Short;
-        let mut buf = [0; 65535];
-        assert!(s.pipe.send_pkt_to_server(pkt_type, &frames, &mut buf).is_ok());
+        s.pipe.client.stream_shutdown(stream, Shutdown::Read, error_code).unwrap();
+        s.advance().ok();
 
-        // Verify StopSending event
-        let stop_sending = Event::StopSending { error_code };
-        assert_eq!(s.poll_server(), Ok((stream, stop_sending)));
+        // Verify event
+        let server_reset = Event::Reset { error_code };
+        assert_eq!(s.poll_server(), Ok((stream, server_reset)));
 
         // Finish the response
         s.send_body_server(stream, true).unwrap();
