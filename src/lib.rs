@@ -2278,7 +2278,7 @@ impl Connection {
                     Some(s) => s,
                     None => {
                         println!("remove reset mark for stream {}", stream_id);
-                        self.streams.mark_resettable(stream_id, false, error_code);
+                        self.streams.mark_will_reset(stream_id, false, error_code);
                         continue;
                     },
                 };
@@ -2287,7 +2287,7 @@ impl Connection {
                 let frame = frame::Frame::ResetStream { stream_id, error_code, final_size };
 
                 if push_frame_to_pkt!(frames, frame, payload_len, left) {
-                    self.streams.mark_resettable(stream_id, false, error_code);
+                    self.streams.mark_will_reset(stream_id, false, error_code);
                     self.streams.mark_sent_reset(stream_id, error_code);
 
                     ack_eliciting = true;
@@ -2953,7 +2953,7 @@ impl Connection {
                 self.streams.mark_writable(stream_id, false);
 
                 // Ready to reset the stream
-                self.streams.mark_resettable(stream_id, true, err);
+                self.streams.mark_will_reset(stream_id, true, err);
             },
         }
 

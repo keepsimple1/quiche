@@ -122,7 +122,7 @@ pub struct StreamMap {
     /// Set of stream IDs corresponding to streams that have shut down send or
     /// received STOP_SENDING. In both cases, we want to send RESET_STREAM to the peer.
     /// The value of the map elements represents the error code.
-    resettable: HashMap<u64, u64>,
+    will_reset: HashMap<u64, u64>,
 
     /// Queue of (stream_id, error_code) corresponding to RESET_STREAM sent.
     sent_reset: VecDeque<(u64, u64)>,
@@ -376,11 +376,11 @@ impl StreamMap {
         }
     }
 
-    pub fn mark_resettable(&mut self, stream_id: u64, reset: bool, error_code: u64) {
+    pub fn mark_will_reset(&mut self, stream_id: u64, reset: bool, error_code: u64) {
         if reset {
-            self.resettable.insert(stream_id, error_code);
+            self.will_reset.insert(stream_id, error_code);
         } else {
-            self.resettable.remove(&stream_id);
+            self.will_reset.remove(&stream_id);
         }
     }
 
@@ -463,7 +463,7 @@ impl StreamMap {
     }
 
     pub fn resettable(&self) -> hash_map::Iter<u64, u64> {
-        self.resettable.iter()
+        self.will_reset.iter()
     }
 
     /// Creates an iterator over streams that need to send STREAM_DATA_BLOCKED.
