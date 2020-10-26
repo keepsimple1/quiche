@@ -2287,7 +2287,7 @@ impl Connection {
                 let frame = frame::Frame::ResetStream { stream_id, error_code, final_size };
 
                 if push_frame_to_pkt!(frames, frame, payload_len, left) {
-                    println!("added RESET_FRAME into packet");
+                    println!("added RESET_FRAME into packet for stream  {}", stream_id);
                     self.streams.mark_will_reset(stream_id, false, error_code);
                     self.streams.mark_sent_reset(stream_id, error_code);
 
