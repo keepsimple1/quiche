@@ -2270,7 +2270,7 @@ impl Connection {
             // Create RESET_STREAM frames as needed
             for (stream_id, error_code) in self
                 .streams
-                .resettable()
+                .will_reset()
                 .map(|(&k, &v)| (k, v))
                 .collect::<Vec<(u64, u64)>>()
             {
@@ -2287,6 +2287,7 @@ impl Connection {
                 let frame = frame::Frame::ResetStream { stream_id, error_code, final_size };
 
                 if push_frame_to_pkt!(frames, frame, payload_len, left) {
+                    println!("added RESET_FRAME into packet");
                     self.streams.mark_will_reset(stream_id, false, error_code);
                     self.streams.mark_sent_reset(stream_id, error_code);
 

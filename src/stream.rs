@@ -462,7 +462,7 @@ impl StreamMap {
         self.recv_aborted.iter()
     }
 
-    pub fn resettable(&self) -> hash_map::Iter<u64, u64> {
+    pub fn will_reset(&self) -> hash_map::Iter<u64, u64> {
         self.will_reset.iter()
     }
 
