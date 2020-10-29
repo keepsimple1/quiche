@@ -337,6 +337,10 @@ impl StreamMap {
         }
     }
 
+    pub fn is_writable(&self, stream_id: u64) -> bool {
+        self.writable.contains(&stream_id)
+    }
+
     /// Adds or removes the stream ID to/from the almost full streams set.
     ///
     /// If the stream was already in the list, this does nothing.

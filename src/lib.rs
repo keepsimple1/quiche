@@ -2964,6 +2964,15 @@ impl Connection {
         self.streams.writable()
     }
 
+    /// Check if a stream is writable
+    pub fn is_writable(&self, stream_id: u64) -> bool {
+        if self.send_capacity() > 0 {
+            self.streams.is_writable(stream_id)
+        } else {
+            false
+        }
+    }
+
     /// Returns the streamId of a stream that has received STOP_SENDING
     pub fn poll_stoppable(&mut self) -> Option<(u64, u64)> {
         self.streams.poll_stoppable()
