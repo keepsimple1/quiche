@@ -2285,7 +2285,6 @@ impl Connection {
                 let frame = frame::Frame::ResetStream { stream_id, error_code, final_size };
 
                 if push_frame_to_pkt!(frames, frame, payload_len, left) {
-                    info!("added RESET_FRAME into packet for stream  {}", stream_id);
                     self.streams.mark_will_reset(stream_id, false, error_code);
 
                     ack_eliciting = true;
@@ -3696,7 +3695,6 @@ impl Connection {
                 if !stream::is_local(stream_id, self.is_server) &&
                     !stream::is_bidi(stream_id)
                 {
-                    println!("STOP_SENDING on a receive-only stream is a fatal error");
                     return Err(Error::InvalidStreamState);
                 }
 
@@ -3705,7 +3703,6 @@ impl Connection {
                 if stream::is_local(stream_id, self.is_server) &&
                     self.streams.get(stream_id).is_none()
                 {
-                    println!("STOP_SENDING on a non-existing locally-initiated stream");
                     return Err(Error::InvalidStreamState);
                 }
 
