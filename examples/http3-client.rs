@@ -270,7 +270,7 @@ fn main() {
                     )) => {
                         info!(
                             "StopSending received for stream {}, error_code {}",
-                              stream_id, error_code
+                            stream_id, error_code
                         );
                     },
 
