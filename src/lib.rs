@@ -2256,7 +2256,10 @@ impl Connection {
                 .map(|(&k, &v)| (k, v))
                 .collect::<Vec<(u64, u64)>>()
             {
-                let frame = frame::Frame::StopSending { stream_id, error_code };
+                let frame = frame::Frame::StopSending {
+                    stream_id,
+                    error_code,
+                };
 
                 if push_frame_to_pkt!(frames, frame, payload_len, left) {
                     self.streams.mark_recv_aborted(stream_id, false, error_code);
@@ -2276,13 +2279,18 @@ impl Connection {
                 let stream = match self.streams.get(stream_id) {
                     Some(s) => s,
                     None => {
-                        self.streams.mark_will_reset(stream_id, false, error_code);
+                        self.streams
+                            .mark_will_reset(stream_id, false, error_code);
                         continue;
                     },
                 };
 
                 let final_size = stream.send.off_front();
-                let frame = frame::Frame::ResetStream { stream_id, error_code, final_size };
+                let frame = frame::Frame::ResetStream {
+                    stream_id,
+                    error_code,
+                    final_size,
+                };
 
                 if push_frame_to_pkt!(frames, frame, payload_len, left) {
                     self.streams.mark_will_reset(stream_id, false, error_code);
@@ -2926,7 +2934,12 @@ impl Connection {
     pub fn stream_shutdown(
         &mut self, stream_id: u64, direction: Shutdown, err: u64,
     ) -> Result<()> {
-        trace!("stream_shutdown: stream {} direction {:?} err {}", stream_id, direction, err);
+        trace!(
+            "stream_shutdown: stream {} direction {:?} err {}",
+            stream_id,
+            direction,
+            err
+        );
 
         // Get existing stream.
         let stream = self.streams.get_mut(stream_id).ok_or(Error::Done)?;
@@ -3687,10 +3700,14 @@ impl Connection {
                     return Err(Error::FlowControl);
                 }
 
-                self.streams.mark_reset_stream(stream_id, error_code, final_size);
+                self.streams
+                    .mark_reset_stream(stream_id, error_code, final_size);
             },
 
-            frame::Frame::StopSending { stream_id, error_code } => {
+            frame::Frame::StopSending {
+                stream_id,
+                error_code,
+            } => {
                 // STOP_SENDING on a receive-only stream is a fatal error.
                 if !stream::is_local(stream_id, self.is_server) &&
                     !stream::is_bidi(stream_id)
@@ -7824,8 +7841,8 @@ mod tests {
     }
 
     #[test]
-    /// Tests stream_shutdown read marks recv_aborted and sends out STOP_SENDING,
-    /// the server will shutdown its write.
+    /// Tests stream_shutdown read marks recv_aborted and sends out
+    /// STOP_SENDING, the server will shutdown its write.
     fn stream_recv_aborted() {
         let mut buf = [0; 65535];
 
@@ -7863,7 +7880,9 @@ mod tests {
 
         // Client shuts down Read, hence sends STOP_SENDING
         let error_code: u64 = 12345;
-        pipe.client.stream_shutdown(4, Shutdown::Read, error_code).unwrap();
+        pipe.client
+            .stream_shutdown(4, Shutdown::Read, error_code)
+            .unwrap();
         let mut recv_aborted = pipe.client.streams.recv_aborted();
         assert_eq!(recv_aborted.next(), Some((&4, &error_code)));
         assert_eq!(pipe.advance(&mut buf), Ok(()));
@@ -7917,7 +7936,9 @@ mod tests {
 
         // Server shuts down Write, hence sends RESET_STREAM
         let error_code: u64 = 12345;
-        pipe.server.stream_shutdown(4, Shutdown::Write, error_code).unwrap();
+        pipe.server
+            .stream_shutdown(4, Shutdown::Write, error_code)
+            .unwrap();
         let mut will_reset = pipe.server.streams.will_reset();
         assert_eq!(will_reset.next(), Some((&4, &error_code)));
         assert_eq!(pipe.advance(&mut buf), Ok(()));
@@ -7932,7 +7953,8 @@ mod tests {
     }
 
     #[test]
-    /// Tests it's okay to send STOP_SENDING to create client-initiated bidirectional stream
+    /// Tests it's okay to send STOP_SENDING to create client-initiated
+    /// bidirectional stream
     fn stop_sending_frame_new_stream() {
         let mut buf = [0; 65535];
 
@@ -7966,7 +7988,8 @@ mod tests {
     }
 
     #[test]
-    /// Tests STOP_SENDING is invalid for receive-only, non-locally-initiated stream
+    /// Tests STOP_SENDING is invalid for receive-only, non-locally-initiated
+    /// stream
     fn invalid_stop_sending_frame_recv_only() {
         let mut buf = [0; 65535];
 
@@ -7974,7 +7997,8 @@ mod tests {
 
         assert_eq!(pipe.handshake(&mut buf), Ok(()));
 
-        // Use stream_id 2 for client-initiated uni-directional (receive-only for server)
+        // Use stream_id 2 for client-initiated uni-directional (receive-only for
+        // server)
         let stream_id = 2;
         assert_eq!(pipe.client.stream_send(stream_id, b"hello", false), Ok(5));
         assert_eq!(pipe.advance(&mut buf), Ok(()));
@@ -7987,8 +8011,10 @@ mod tests {
         let pkt_type = packet::Type::Short;
 
         // invalid: STOP_SENDING on a receive-only stream is a fatal error
-        assert_eq!(pipe.send_pkt_to_server(pkt_type, &frames, &mut buf),
-                   Err(Error::InvalidStreamState));
+        assert_eq!(
+            pipe.send_pkt_to_server(pkt_type, &frames, &mut buf),
+            Err(Error::InvalidStreamState)
+        );
 
         // The stream still works
         assert_eq!(pipe.client.stream_send(stream_id, b"world", true), Ok(5));
@@ -8013,9 +8039,12 @@ mod tests {
 
         let pkt_type = packet::Type::Short;
 
-        // invalid: STOP_SENDING on a non-existing locally-initiated stream is a fatal error
-        assert_eq!(pipe.send_pkt_to_server(pkt_type, &frames, &mut buf),
-                   Err(Error::InvalidStreamState));
+        // invalid: STOP_SENDING on a non-existing locally-initiated stream is a
+        // fatal error
+        assert_eq!(
+            pipe.send_pkt_to_server(pkt_type, &frames, &mut buf),
+            Err(Error::InvalidStreamState)
+        );
     }
 }
 

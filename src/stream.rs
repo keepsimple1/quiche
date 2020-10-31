@@ -114,20 +114,21 @@ pub struct StreamMap {
     /// blocking occurred.
     blocked: HashMap<u64, u64>,
 
-    /// Set of stream IDs corresponding to streams that have shut down recv and need
-    /// to send STOP_SENDING. The value of the map elements represents Application
-    /// Error Code.
+    /// Set of stream IDs corresponding to streams that have shut down recv and
+    /// need to send STOP_SENDING. The value of the map elements represents
+    /// Application Error Code.
     recv_aborted: HashMap<u64, u64>,
 
     /// Set of stream IDs corresponding to streams that have shut down send or
-    /// received STOP_SENDING. In both cases, we want to send RESET_STREAM to the peer.
-    /// The value of the map elements represents the error code.
+    /// received STOP_SENDING. In both cases, we want to send RESET_STREAM to
+    /// the peer. The value of the map elements represents the error code.
     will_reset: HashMap<u64, u64>,
 
     /// Queue of (stream_id, error_code) corresponding to STOP_SENDING received.
     stop_sending: VecDeque<(u64, u64)>,
 
-    /// Queue of (stream_id, error_code, final_size) corresponding to RESET_STREAM received.
+    /// Queue of (stream_id, error_code, final_size) corresponding to
+    /// RESET_STREAM received.
     reset_stream: VecDeque<(u64, u64, u64)>,
 }
 
@@ -371,7 +372,9 @@ impl StreamMap {
         }
     }
 
-    pub fn mark_recv_aborted(&mut self, stream_id: u64, aborted: bool, error_code: u64) {
+    pub fn mark_recv_aborted(
+        &mut self, stream_id: u64, aborted: bool, error_code: u64,
+    ) {
         if aborted {
             self.recv_aborted.insert(stream_id, error_code);
         } else {
@@ -379,7 +382,9 @@ impl StreamMap {
         }
     }
 
-    pub fn mark_will_reset(&mut self, stream_id: u64, reset: bool, error_code: u64) {
+    pub fn mark_will_reset(
+        &mut self, stream_id: u64, reset: bool, error_code: u64,
+    ) {
         if reset {
             self.will_reset.insert(stream_id, error_code);
         } else {
@@ -395,8 +400,11 @@ impl StreamMap {
         self.stop_sending.pop_front()
     }
 
-    pub fn mark_reset_stream(&mut self, stream_id: u64, error_code: u64, final_size: u64) {
-        self.reset_stream.push_back((stream_id, error_code, final_size));
+    pub fn mark_reset_stream(
+        &mut self, stream_id: u64, error_code: u64, final_size: u64,
+    ) {
+        self.reset_stream
+            .push_back((stream_id, error_code, final_size));
     }
 
     pub fn poll_reset_stream(&mut self) -> Option<(u64, u64, u64)> {

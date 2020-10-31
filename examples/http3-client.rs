@@ -264,12 +264,23 @@ fn main() {
                         info!("GOAWAY id={}", goaway_id);
                     },
 
-                    Ok((stream_id, quiche::h3::Event::StopSending { error_code })) => {
-                        info!("StopSending received for stream {}, error_code {}",
-                              stream_id, error_code);
+                    Ok((
+                        stream_id,
+                        quiche::h3::Event::StopSending { error_code },
+                    )) => {
+                        info!(
+                            "StopSending received for stream {}, error_code {}",
+                              stream_id, error_code
+                        );
                     },
 
-                    Ok((stream_id, quiche::h3::Event::ResetStream { error_code, final_size })) => {
+                    Ok((
+                        stream_id,
+                        quiche::h3::Event::ResetStream {
+                            error_code,
+                            final_size,
+                        },
+                    )) => {
                         info!("ResetStream received for stream {}, error_code {}, final_size {}",
                               stream_id, error_code, final_size);
                     },
