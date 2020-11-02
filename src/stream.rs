@@ -990,6 +990,7 @@ impl SendBuf {
         if self.shutdown {
             // Since we won't write any more data anyway, pretend that we sent
             // all data that was passed in.
+            error!("Pretending sending {} bytes even the stream is shutdown.", data.len());
             return Ok(data.len());
         }
 
@@ -1166,6 +1167,11 @@ impl SendBuf {
         }
 
         false
+    }
+
+    /// Returns true if the SendBuf is shutdown
+    pub fn is_shutdown(&self) -> bool {
+        self.shutdown
     }
 
     /// Returns true if the send-side of the stream is complete.

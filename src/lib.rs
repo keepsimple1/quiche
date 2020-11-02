@@ -2997,6 +2997,17 @@ impl Connection {
         stream.recv.is_fin()
     }
 
+    /// Returns true if the stream is shutdown for its send direction
+    pub fn stream_is_shutdown(&self, stream_id: u64) -> bool {
+        let stream = match self.streams.get(stream_id) {
+            Some(v) => v,
+
+            None => return true,
+        };
+
+        stream.send.is_shutdown()
+    }
+
     /// Initializes the stream's application data.
     ///
     /// This can be used by applications to store per-stream information without
