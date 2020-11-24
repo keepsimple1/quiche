@@ -3675,6 +3675,8 @@ impl Connection {
                     return Err(Error::InvalidStreamState);
                 }
 
+                info!("stream {} received RESET_STREAM", stream_id);
+
                 // Get existing stream or create a new one, but if the stream
                 // has already been closed and collected, ignore the frame.
                 //
@@ -3707,7 +3709,7 @@ impl Connection {
                 if !stream::is_local(stream_id, self.is_server) &&
                     !stream::is_bidi(stream_id)
                 {
-                    println!("STOP_SENDING on a receive-only stream is a fatal error");
+                    error!("STOP_SENDING on a receive-only stream is a fatal error");
                     return Err(Error::InvalidStreamState);
                 }
 
@@ -3716,9 +3718,11 @@ impl Connection {
                 if stream::is_local(stream_id, self.is_server) &&
                     self.streams.get(stream_id).is_none()
                 {
-                    println!("STOP_SENDING on a non-existing locally-initiated stream");
+                    error!("STOP_SENDING on a non-existing locally-initiated stream");
                     return Err(Error::InvalidStreamState);
                 }
+
+                info!("stream {} received STOP_SENDING", stream_id);
 
                 self.get_or_create_stream(stream_id, false)?;
 
