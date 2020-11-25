@@ -438,6 +438,7 @@ impl StreamMap {
     /// This should only be called when Stream::is_complete() returns true for
     /// the given stream.
     pub fn collect(&mut self, stream_id: u64, local: bool) {
+        info!("Collecting stream {}", stream_id);
         if !local {
             // If the stream was created by the peer, give back a max streams
             // credit.
