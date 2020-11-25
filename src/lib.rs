@@ -3724,7 +3724,10 @@ impl Connection {
 
                 info!("stream {} received STOP_SENDING", stream_id);
 
-                self.get_or_create_stream(stream_id, false)?;
+                // what happens if this stream is in "Data sent" state?
+                if let Err(e) = self.get_or_create_stream(stream_id, false) {
+                    error!("stream {} STOP_SENDING find error {}", stream_id, e);
+                }
 
                 self.streams.mark_stop_sending(stream_id, error_code);
                 self.stream_shutdown(stream_id, Shutdown::Write, error_code)?;
