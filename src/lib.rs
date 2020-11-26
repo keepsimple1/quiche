@@ -1838,6 +1838,7 @@ impl Connection {
                     if stream.is_complete() {
                         let local = stream.local;
                         self.streams.collect(stream_id, local);
+                        info!("ACK completes stream {} ack_data: {:?}", stream_id, data);
                     }
                 },
 
