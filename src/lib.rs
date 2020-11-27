@@ -3676,7 +3676,7 @@ impl Connection {
                     return Err(Error::InvalidStreamState);
                 }
 
-                info!("stream {} received RESET_STREAM", stream_id);
+                info!("stream {} received RESET_STREAM error_code {}", stream_id, error_code);
 
                 // Get existing stream or create a new one, but if the stream
                 // has already been closed and collected, ignore the frame.
@@ -3723,7 +3723,7 @@ impl Connection {
                     return Err(Error::InvalidStreamState);
                 }
 
-                info!("stream {} received STOP_SENDING", stream_id);
+                info!("stream {} received STOP_SENDING error_code {}", stream_id, error_code);
 
                 // what happens if this stream is in "Data sent" state?
                 if let Err(e) = self.get_or_create_stream(stream_id, false) {
