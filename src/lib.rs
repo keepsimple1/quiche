@@ -1838,7 +1838,6 @@ impl Connection {
                     if stream.is_complete() {
                         let local = stream.local;
                         self.streams.collect(stream_id, local);
-                        // info!("ACK completes stream {} ack_data: {:?}", stream_id, data);
                     }
                 },
 
@@ -2286,7 +2285,6 @@ impl Connection {
                 let frame = frame::Frame::ResetStream { stream_id, error_code, final_size };
 
                 if push_frame_to_pkt!(frames, frame, payload_len, left) {
-                    info!("added RESET_FRAME into packet for stream  {}", stream_id);
                     self.streams.mark_will_reset(stream_id, false, error_code);
 
                     ack_eliciting = true;
@@ -3676,7 +3674,7 @@ impl Connection {
                     return Err(Error::InvalidStreamState);
                 }
 
-                info!("stream {} received RESET_STREAM error_code {}", stream_id, error_code);
+                info!("{} stream {} received RESET_STREAM error_code {} final_size {}", self.trace_id, stream_id, error_code, final_size);
 
                 // Get existing stream or create a new one, but if the stream
                 // has already been closed and collected, ignore the frame.
@@ -3692,7 +3690,7 @@ impl Connection {
                     Ok(v) => v,
 
                     Err(Error::Done) => {
-                        info!("stream {} already closed or collected", stream_id);
+                        info!("{} stream {} closed or collected, ignore RESET_STREAM", self.trace_id, stream_id);
                         return Ok(());
                     },
 
@@ -3726,14 +3724,14 @@ impl Connection {
                     return Err(Error::InvalidStreamState);
                 }
 
-                info!("stream {} received STOP_SENDING error_code {}", stream_id, error_code);
+                info!("{} stream {} received STOP_SENDING error_code {}", self.trace_id, stream_id, error_code);
 
                 // what happens if this stream is in "Data sent" state?
                 match self.get_or_create_stream(stream_id, false) {
                     Ok(_) => {},
 
                     Err(Error::Done) => {
-                        info!("stream {} already closed or collected, ignore STOP_SENDING", stream_id);
+                        info!("{} stream {} closed or collected, ignore STOP_SENDING", self.trace_id, stream_id);
                         return Ok(());
                     },
 
