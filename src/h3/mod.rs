@@ -915,6 +915,7 @@ impl Connection {
         let overhead = octets::varint_len(frame::DATA_FRAME_TYPE_ID) +
             octets::varint_len(body.len() as u64);
 
+        let send_cap = conn.send_capacity();
         let stream_cap = conn.stream_capacity(stream_id)?;
 
         // Make sure there is enough capacity to send the frame header and at
@@ -932,13 +933,14 @@ impl Connection {
         let fin = if body_len != body.len() { false } else { fin };
 
         info!(
-            "{} tx frm DATA stream={} len={} fin={} stream_cap={} overhead={}",
+            "{} tx frm DATA stream={} len={} fin={} stream_cap={} overhead={} send_cap={}",
             conn.trace_id(),
             stream_id,
             body_len,
             fin,
             stream_cap,
-            overhead
+            overhead,
+            send_cap,
         );
 
         b.put_varint(frame::DATA_FRAME_TYPE_ID)?;
