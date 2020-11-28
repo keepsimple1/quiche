@@ -1838,7 +1838,7 @@ impl Connection {
                     if stream.is_complete() {
                         let local = stream.local;
                         self.streams.collect(stream_id, local);
-                        info!("ACK completes stream {} ack_data: {:?}", stream_id, data);
+                        // info!("ACK completes stream {} ack_data: {:?}", stream_id, data);
                     }
                 },
 
@@ -3691,7 +3691,10 @@ impl Connection {
                 let stream = match self.get_or_create_stream(stream_id, false) {
                     Ok(v) => v,
 
-                    Err(Error::Done) => return Ok(()),
+                    Err(Error::Done) => {
+                        info!("stream {} already closed or collected", stream_id);
+                        return Ok(());
+                    },
 
                     Err(e) => return Err(e),
                 };
@@ -3726,8 +3729,15 @@ impl Connection {
                 info!("stream {} received STOP_SENDING error_code {}", stream_id, error_code);
 
                 // what happens if this stream is in "Data sent" state?
-                if let Err(e) = self.get_or_create_stream(stream_id, false) {
-                    error!("stream {} STOP_SENDING find error {}", stream_id, e);
+                match self.get_or_create_stream(stream_id, false) {
+                    Ok(_) => {},
+
+                    Err(Error::Done) => {
+                        info!("stream {} already closed or collected, ignore STOP_SENDING", stream_id);
+                        return Ok(());
+                    },
+
+                    Err(e) => return Err(e),
                 }
 
                 self.streams.mark_stop_sending(stream_id, error_code);
