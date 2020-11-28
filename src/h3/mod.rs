@@ -931,12 +931,14 @@ impl Connection {
         // application can try again later.
         let fin = if body_len != body.len() { false } else { fin };
 
-        trace!(
-            "{} tx frm DATA stream={} len={} fin={}",
+        info!(
+            "{} tx frm DATA stream={} len={} fin={} stream_cap={} overhead={}",
             conn.trace_id(),
             stream_id,
             body_len,
-            fin
+            fin,
+            stream_cap,
+            overhead
         );
 
         b.put_varint(frame::DATA_FRAME_TYPE_ID)?;
