@@ -58,7 +58,7 @@ const RTT_WINDOW: Duration = Duration::from_secs(300);
 const MAX_PTO_PROBES_COUNT: usize = 2;
 
 // Congestion Control
-const INITIAL_WINDOW_PACKETS: usize = 10;
+const INITIAL_WINDOW_PACKETS: usize = 20;
 
 const INITIAL_WINDOW: usize = INITIAL_WINDOW_PACKETS * MAX_DATAGRAM_SIZE;
 
