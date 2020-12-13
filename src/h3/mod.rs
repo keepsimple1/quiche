@@ -1335,7 +1335,7 @@ impl Connection {
     fn open_grease_stream(&mut self, conn: &mut super::Connection) -> Result<()> {
         match self.open_uni_stream(conn, grease_value()) {
             Ok(stream_id) => {
-                trace!("{} open GREASE stream {}", conn.trace_id(), stream_id);
+                info!("{} open GREASE stream {}", conn.trace_id(), stream_id);
 
                 conn.stream_send(stream_id, b"GREASE is the word", false)?;
             },

@@ -245,6 +245,7 @@ impl StreamMap {
                     },
                 };
 
+                info!("get_or_create: creating stream {}", id);
                 let s = Stream::new(max_rx_data, max_tx_data, is_bidi(id), local);
                 v.insert(s)
             },
