@@ -367,6 +367,15 @@ const RESERVED_VERSION_MASK: u32 = 0xfafafafa;
 /// [`Result`]: https://doc.rust-lang.org/std/result/enum.Result.html
 pub type Result<T> = std::result::Result<T, Error>;
 
+/// Possible values in TlsError
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum TlsErrorValue {
+    /// NUL_ERROR from C API.
+    CNull,
+    /// integer error values.
+    CInt(i32),
+}
+
 /// A QUIC error.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum Error {
@@ -404,6 +413,9 @@ pub enum Error {
 
     /// The TLS handshake failed.
     TlsFail,
+
+    /// TLS error that encapslated the underlying error.
+    TlsError(TlsErrorValue),
 
     /// The peer violated the local flow control limits.
     FlowControl,

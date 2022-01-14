@@ -45,6 +45,7 @@ use crate::ConnectionError;
 use crate::crypto;
 use crate::octets;
 use crate::packet;
+use crate::TlsErrorValue;
 
 const TLS1_3_VERSION: u16 = 0x0304;
 const TLS_ALERT_ERROR: u64 = 0x100;
@@ -186,7 +187,8 @@ impl Context {
     }
 
     pub fn use_certificate_chain_file(&mut self, file: &str) -> Result<()> {
-        let cstr = ffi::CString::new(file).map_err(|_| Error::TlsFail)?;
+        let cstr = ffi::CString::new(file)
+            .map_err(|_| Error::TlsError(TlsErrorValue::CNull))?;
         map_result(unsafe {
             SSL_CTX_use_certificate_chain_file(self.as_mut_ptr(), cstr.as_ptr())
         })
@@ -988,7 +990,7 @@ extern fn new_session(ssl: *mut SSL, session: *mut SSL_SESSION) -> c_int {
 fn map_result(bssl_result: c_int) -> Result<()> {
     match bssl_result {
         1 => Ok(()),
-        _ => Err(Error::TlsFail),
+        x => Err(Error::TlsError(TlsErrorValue::CInt(x))),
     }
 }
 
