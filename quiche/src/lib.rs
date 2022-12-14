@@ -6701,7 +6701,7 @@ impl Connection {
     }
 
     /// Returns the connection level flow control limit.
-    fn max_rx_data(&self) -> u64 {
+    pub fn max_rx_data(&self) -> u64 {
         self.flow_control.max_data()
     }
 
