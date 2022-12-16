@@ -6705,6 +6705,11 @@ impl Connection {
         self.flow_control.max_data()
     }
 
+    /// Returns the window size of the connection level flow control.
+    pub fn window_size(&self) -> u64 {
+        self.flow_control.window()
+    }
+
     /// Returns the updated connection level flow control limit.
     fn max_rx_data_next(&self) -> u64 {
         self.flow_control.max_data_next()
