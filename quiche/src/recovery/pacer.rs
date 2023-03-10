@@ -55,6 +55,9 @@ pub struct Pacer {
     /// Sending pacing rate (bytes/sec).
     rate: u64,
 
+    /// Max pacing rate (bytes/sec).
+    max_rate: u64,
+
     /// Timestamp of the last packet sent time update.
     last_update: Instant,
 
@@ -73,7 +76,7 @@ pub struct Pacer {
 
 impl Pacer {
     pub fn new(
-        enabled: bool, capacity: usize, rate: u64, max_datagram_size: usize,
+        enabled: bool, capacity: usize, rate: u64, max_rate: u64, max_datagram_size: usize,
     ) -> Self {
         // Round capacity to MSS.
         let capacity = capacity / max_datagram_size * max_datagram_size;
@@ -86,6 +89,8 @@ impl Pacer {
             used: 0,
 
             rate,
+
+            max_rate,
 
             last_update: Instant::now(),
 
@@ -109,6 +114,10 @@ impl Pacer {
         self.rate
     }
 
+    pub fn set_max_rate(&mut self, max_rate: u64) {
+        self.max_rate = max_rate;
+    }
+
     /// Updates the bucket capacity or pacing_rate.
     pub fn update(&mut self, capacity: usize, rate: u64, now: Instant) {
         let capacity = capacity / self.max_datagram_size * self.max_datagram_size;
@@ -119,7 +128,11 @@ impl Pacer {
 
         self.capacity = capacity;
 
-        self.rate = rate;
+        self.rate = if self.max_rate != 0 && rate > self.max_rate {
+            self.max_rate
+        } else {
+            rate
+        }
     }
 
     /// Resets the pacer for the next burst.
@@ -197,7 +210,7 @@ mod tests {
         let max_burst = datagram_size * 10;
         let pacing_rate = 100_000;
 
-        let mut p = Pacer::new(true, max_burst, pacing_rate, datagram_size);
+        let mut p = Pacer::new(true, max_burst, pacing_rate, 0, datagram_size);
 
         let now = Instant::now();
 
@@ -230,7 +243,7 @@ mod tests {
         let max_burst = datagram_size * 10;
         let pacing_rate = 100_000;
 
-        let mut p = Pacer::new(true, max_burst, pacing_rate, datagram_size);
+        let mut p = Pacer::new(true, max_burst, pacing_rate, 0, datagram_size);
 
         let now = Instant::now();
 
