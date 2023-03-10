@@ -153,6 +153,8 @@ pub struct Recovery {
     // Pacing.
     pub pacer: pacer::Pacer,
 
+    max_pacing_rate: u64,
+
     // RFC6937 PRR.
     prr: prr::PRR,
 
@@ -273,8 +275,11 @@ impl Recovery {
                 recovery_config.pacing,
                 initial_congestion_window,
                 0,
+                0,
                 recovery_config.max_send_udp_payload_size,
             ),
+
+            max_pacing_rate: 0,
 
             prr: prr::PRR::default(),
 
@@ -388,6 +393,11 @@ impl Recovery {
 
     pub fn set_pacing_rate(&mut self, rate: u64, now: Instant) {
         self.pacer.update(self.send_quantum, rate, now);
+    }
+
+    pub fn set_max_pacing_rate(&mut self, max_rate: u64) {
+        self.max_pacing_rate = max_rate;
+        self.pacer.set_max_rate(max_rate);
     }
 
     pub fn get_packet_send_time(&self) -> Instant {
@@ -715,6 +725,7 @@ impl Recovery {
             self.pacer.enabled(),
             self.congestion_window,
             0,
+            self.max_pacing_rate,
             max_datagram_size,
         );
 

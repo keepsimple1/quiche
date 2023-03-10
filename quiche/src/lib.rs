@@ -1871,6 +1871,14 @@ impl Connection {
         Ok(conn)
     }
 
+    /// Sets pacing rate to the desired `rate`.
+    pub fn set_max_pacing_rate(&mut self, rate: u64) -> Result<()> {
+        let active_path_id = self.paths.get_active_path_id()?;
+        let active_path = self.paths.get_mut(active_path_id)?;
+        active_path.recovery.set_max_pacing_rate(rate);
+        Ok(())
+    }
+
     /// Sets keylog output to the designated [`Writer`].
     ///
     /// This needs to be called as soon as the connection is created, to avoid
