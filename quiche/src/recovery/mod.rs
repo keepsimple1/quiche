@@ -153,6 +153,7 @@ pub struct Recovery {
     // Pacing.
     pub pacer: pacer::Pacer,
 
+    // The max pacing rate in bytes/sec.
     max_pacing_rate: u64,
 
     // RFC6937 PRR.

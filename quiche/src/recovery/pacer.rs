@@ -55,7 +55,7 @@ pub struct Pacer {
     /// Sending pacing rate (bytes/sec).
     rate: u64,
 
-    /// Max pacing rate.
+    /// Max pacing rate (bytes/sec).
     max_rate: u64,
 
     /// Timestamp of the last packet sent time update.

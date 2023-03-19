@@ -1871,7 +1871,7 @@ impl Connection {
         Ok(conn)
     }
 
-    /// Sets pacing rate to the desired `rate`.
+    /// Sets the maximum pacing rate to the desired `rate` in BPS (bytes/sec).
     pub fn set_max_pacing_rate(&mut self, rate: u64) -> Result<()> {
         let active_path_id = self.paths.get_active_path_id()?;
         let active_path = self.paths.get_mut(active_path_id)?;
